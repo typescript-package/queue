@@ -9,7 +9,7 @@
 
 ## typescript-package/queue
 
-Different queue types for TypeScript.
+A lightweight TypeScript library for managing various queue and stack structures.
 
 <!-- npm badge -->
 [![npm version][typescript-package-npm-badge-svg]][typescript-package-npm-badge]
