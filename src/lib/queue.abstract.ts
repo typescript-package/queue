@@ -1,4 +1,5 @@
 import { ArrayState as AbstractArrayState } from "@typescript-package/state";
+export class ArrayState<Type> extends AbstractArrayState<Type>{};
 /**
  * @description A standard FIFO (First In, First Out) queue.
  * @export
@@ -57,7 +58,7 @@ export abstract class Queue<Type> {
    */
   constructor(size: number = Infinity, ...items: Type[]) {
     this.#size = size;
-    this.#queue = new (class ArrayState<Type> extends AbstractArrayState<Type>{})(items);
+    this.#queue = new ArrayState(items);
   }
 
   /**
