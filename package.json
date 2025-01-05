@@ -1,0 +1,38 @@
+{
+  "name": "@typescript-package/queue",
+  "version": "0.0.1",
+  "author": "wwwdev.io <dev@wwwdev.io>",
+  "description": "A lightweight TypeScript library for managing various queue and stack structures.",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "devDependencies": {},
+  "peerDependencies": {
+    "@typescript-package/state": "^2.0.0"
+  },
+  "scripts": {
+    "prepublishOnly": "npm run pkg && npm run clean",
+    "pkg": "npm pkg delete dependencies",
+    "clean": "npm pkg delete scripts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/typescript-package/queue.git"
+  },
+  "bugs": {
+    "url": "https://github.com/typescript-package/queue/issues"
+  },
+  "keywords": [
+    "@typescript-package",
+    "@typescript-package/queue"
+  ],
+  "funding": [
+    {
+      "type": "individual",
+      "url": "https://checkout.revolut.com/pay/048b10a3-0e10-42c8-a917-e3e9cb4c8e29"
+    }
+  ],
+  "sideEffects": false
+}
