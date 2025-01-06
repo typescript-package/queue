@@ -82,6 +82,24 @@ export abstract class Stack<Type, Size extends number> {
   }
 
   /**
+   * @description Checks whether the stack is empty.
+   * @public
+   * @returns {boolean}
+   */
+  public isEmpty(): boolean {
+    return this.#stack.isEmpty();
+  }
+
+  /**
+   * @description Checks if the stack is full.
+   * @public
+   * @returns {boolean}
+   */
+  public isFull(): boolean {
+    return this.#stack.isFull();
+  }
+
+  /**
    * @description Returns the top element on the stack.
    * @public
    * @returns {(Type | undefined)}
