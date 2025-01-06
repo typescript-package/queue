@@ -7,15 +7,15 @@ import { Elements } from "./elements.class";
  * @class Queue
  * @template Type
  */
-export abstract class Queue<Type> {
+export abstract class Queue<Type, Size extends number = number> {
   /**
-   * @description
+   * @description The `Elements` state holder.
    * @public
    * @readonly
-   * @type {readonly Type[]}
+   * @type {Elements<Type>}
    */
-  public get elements(): readonly Type[] {
-    return this.#elements.state;
+  public get elements(): Elements<Type> {
+    return this.#elements;
   }
 
   /**
@@ -32,43 +32,43 @@ export abstract class Queue<Type> {
    * @description The maximum queue size.
    * @public
    * @readonly
-   * @type {number}
+   * @type {Size}
    */
-  public get size(): number {
+  public get size(): Size {
     return this.#size;
   }
 
   /**
-   * @description The `Array` queue state.
+   * @description The actual queue `Elements` state - raw `array` state of the queue.
    * @public
    * @readonly
-   * @type {Elements<Type>}
+   * @type {readonly Type[]}
    */
-  public get state() {
-    return this.#elements;
+  public get state(): readonly Type[] {
+    return this.#elements.state;
   }
 
   /**
-   * @description Privately stored maximum queue size.
-   * @type {number}
+   * @description Privately stored maximum queue size of generic type variable `Size`.
+   * @type {Size}
    */
-  #size;
+  #size: Size;
 
   /**
-   * @description Privately stored `Array` queue elements state.
+   * @description Privately stored `Array` queue elements state of `Elements`.
    * @type {Elements<Type>}
    */
-  #elements;
+  #elements: Elements<Type>;
 
   /**
-   * Creates an instance of `Queue`.
+   * Creates an instance of child class.
    * @constructor
-   * @param {number} [size=Infinity]
-   * @param {...Type[]} elements
+   * @param {Size} [size=Infinity as Size] The maximum size of the `Queue`.
+   * @param {...Type[]} elements The arbitrary parameters of elements of  `Type` to add.
    */
-  constructor(size: number = Infinity, ...elements: Type[]) {
+  constructor(size: Size = Infinity as Size, ...elements: Type[]) {
     this.#size = size;
-    this.#elements = new Elements(elements);
+    this.#elements = new Elements(elements, size);
   }
 
   /**
@@ -95,11 +95,11 @@ export abstract class Queue<Type> {
   /**
    * @description Adds a new element to the queue.
    * @public
-   * @param {Type} element
+   * @param {Type} element The element of `Type` to add.
    * @returns {this}
    */
   public enqueue(element: Type): this {
-    if (this.length === this.size) {
+    if (this.isFull()) {
       throw new Error(`Queue is full.`);
     }
     this.#elements.append(element);
@@ -121,7 +121,7 @@ export abstract class Queue<Type> {
    * @returns {boolean}
    */
   public isFull(): boolean {
-    return this.length === this.#size;
+    return this.#elements.isFull();
   }
 
   /**
