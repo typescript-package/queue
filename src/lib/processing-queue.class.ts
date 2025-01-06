@@ -1,7 +1,9 @@
+// Class.
 import { Boolean as Processing } from "@typescript-package/state";
+// Abstract.
 import { Queue } from "./queue.abstract";
 /**
- * @description A queue that processes items concurrently with a specified concurrency limit.
+ * @description A queue that processes elements concurrently with a specified concurrency limit.
  * @export
  * @class ProcessingQueue
  * @template Type
@@ -9,7 +11,7 @@ import { Queue } from "./queue.abstract";
  */
 export class ProcessingQueue<Type> extends Queue<Type> {
   /**
-   * @description The maximum number of items that can be processed concurrently.
+   * @description The maximum number of elements that can be processed concurrently.
    * @public
    * @readonly
    * @type {number}
@@ -19,7 +21,7 @@ export class ProcessingQueue<Type> extends Queue<Type> {
   }
 
   /**
-   * @description A set containing all items that have been successfully processed.
+   * @description A set containing all elements that have been successfully processed.
    * @public
    * @readonly
    * @type {Set<Type>}
@@ -29,7 +31,7 @@ export class ProcessingQueue<Type> extends Queue<Type> {
   }
 
   /**
-   * @description Privately stored current number of items being processed.
+   * @description Privately stored current number of elements being processed.
    * @type {number}
    */
   #activeCount: number = 0;
@@ -41,13 +43,13 @@ export class ProcessingQueue<Type> extends Queue<Type> {
   #concurrency;
 
   /**
-   * @description Tracks whether the queue is processing items.
+   * @description Tracks whether the queue is processing elements.
    * @type {Processing}
    */
   #processing = new Processing(false);
 
   /**
-   * @description Privately stored set of all processed items.
+   * @description Privately stored set of all processed elements.
    * @type {Set<Type>}
    */
   #processed: Set<Type> = new Set();
@@ -57,15 +59,15 @@ export class ProcessingQueue<Type> extends Queue<Type> {
    * @constructor
    * @param {number} [concurrency=1]
    * @param {number} [size=Infinity]
-   * @param {...Type[]} items
+   * @param {...Type[]} elements
    */
-  constructor(concurrency: number = 1, size: number = Infinity, ...items: Type[]) {
-    super(size, ...items);
+  constructor(concurrency: number = 1, size: number = Infinity, ...elements: Type[]) {
+    super(size, ...elements);
     this.#concurrency = concurrency;
   }
 
   /**
-   * @description Waits for all items in the queue to be processed and returns the set of processed items.
+   * @description Waits for all elements in the queue to be processed and returns the set of processed elements.
    * @public
    * @async
    * @returns {Promise<Set<Type>>}
@@ -81,32 +83,32 @@ export class ProcessingQueue<Type> extends Queue<Type> {
   }
 
   /**
-   * @description Starts processing items in the queue using the provided callback function.
+   * @description Starts processing elements in the queue using the provided callback function.
    * @public
-   * @param {(item: Type) => void} callbackFn A function to process each item in the queue.
+   * @param {(element: Type) => void} callbackFn A function to process each element in the queue.
    * @returns {void) => void}
    */
-  public run(callbackFn: (item: Type) => void) {
+  public run(callbackFn: (element: Type) => void) {
     this.#processing.true();
     while (this.#activeCount < this.#concurrency && super.length > 0) {
-      const item = this.dequeue();
-      item && this.#process(item, callbackFn);
+      const element = this.dequeue();
+      element && this.#process(element, callbackFn);
     }
   }
 
   /**
-   * @description Processes a single item using the provided callback function.
-   * @param {Type} item The item to process.
-   * @param {(item: Type) => void} callbackFn A function to process the `item`.
+   * @description Processes a single element using the provided callback function.
+   * @param {Type} element The element to process.
+   * @param {(element: Type) => void} callbackFn A function to process the `element`.
    * @returns {this}
    */
-  #process(item: Type, callbackFn: (item: Type) => void): this {
+  #process(element: Type, callbackFn: (element: Type) => void): this {
     this.#activeCount++;
     try {
-      callbackFn(item);      
+      callbackFn(element);      
     } finally {
       this.#activeCount--;
-      this.#processed.add(item);
+      this.#processed.add(element);
       this.run(callbackFn);
     }
     return this;
