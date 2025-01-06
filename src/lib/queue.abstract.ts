@@ -1,5 +1,5 @@
-import { ArrayState as AbstractArrayState } from "@typescript-package/state";
-export class ArrayState<Type> extends AbstractArrayState<Type>{};
+// Class.
+import { Elements } from "./elements.class";
 /**
  * @description A standard FIFO (First In, First Out) queue.
  * @export
@@ -9,13 +9,23 @@ export class ArrayState<Type> extends AbstractArrayState<Type>{};
  */
 export abstract class Queue<Type> {
   /**
+   * @description
+   * @public
+   * @readonly
+   * @type {readonly Type[]}
+   */
+  public get elements(): readonly Type[] {
+    return this.#elements.state;
+  }
+
+  /**
    * @description The actual queue length.
    * @public
    * @readonly
    * @type {number}
    */
   public get length(): number {
-    return this.#queue.length;
+    return this.#elements.length;
   }
 
   /**
@@ -32,10 +42,10 @@ export abstract class Queue<Type> {
    * @description The `Array` queue state.
    * @public
    * @readonly
-   * @type {ArrayState<Type>}
+   * @type {Elements<Type>}
    */
-  public get queue() {
-    return this.#queue;
+  public get state() {
+    return this.#elements;
   }
 
   /**
@@ -45,20 +55,20 @@ export abstract class Queue<Type> {
   #size;
 
   /**
-   * @description Privately stored `Array` queue state.
-   * @type {ArrayState<Type>}
+   * @description Privately stored `Array` queue elements state.
+   * @type {Elements<Type>}
    */
-  #queue;
+  #elements;
 
   /**
    * Creates an instance of `Queue`.
    * @constructor
    * @param {number} [size=Infinity]
-   * @param {...Type[]} items
+   * @param {...Type[]} elements
    */
-  constructor(size: number = Infinity, ...items: Type[]) {
+  constructor(size: number = Infinity, ...elements: Type[]) {
     this.#size = size;
-    this.#queue = new ArrayState(items);
+    this.#elements = new Elements(elements);
   }
 
   /**
@@ -67,7 +77,7 @@ export abstract class Queue<Type> {
    * @returns {this}
    */
   public clear(): this {
-    this.#queue.clear();
+    this.#elements.clear();
     return this;
   }
 
@@ -77,22 +87,22 @@ export abstract class Queue<Type> {
    * @returns {(Type | undefined)}
    */
   public dequeue(): Type | undefined {
-    const first = this.#queue.first();
-    this.#queue.remove(0);
+    const first = this.#elements.first();
+    this.#elements.remove(0);
     return first;
   }
 
   /**
    * @description Adds a new element to the queue.
    * @public
-   * @param {Type} item
+   * @param {Type} element
    * @returns {this}
    */
-  public enqueue(item: Type): this {
+  public enqueue(element: Type): this {
     if (this.length === this.size) {
       throw new Error(`Queue is full.`);
     }
-    this.#queue.append(item);
+    this.#elements.append(element);
     return this;
   }
 
@@ -120,6 +130,6 @@ export abstract class Queue<Type> {
    * @returns {Type}
    */
   public peek(): Type {
-    return this.#queue.first();
+    return this.#elements.first();
   }
 }
