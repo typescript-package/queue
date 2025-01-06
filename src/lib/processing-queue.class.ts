@@ -9,7 +9,11 @@ import { Queue } from "./queue.abstract";
  * @template Type
  * @extends {Queue<Type>}
  */
-export class ProcessingQueue<Type> extends Queue<Type> {
+export class ProcessingQueue<
+  Type,
+  Concurrency extends number = number,
+  Size extends number = number
+> extends Queue<Type, Size> {
   /**
    * @description The maximum number of elements that can be processed concurrently.
    * @public
@@ -53,15 +57,19 @@ export class ProcessingQueue<Type> extends Queue<Type> {
    * @type {Set<Type>}
    */
   #processed: Set<Type> = new Set();
-
+  
   /**
    * Creates an instance of child class.
    * @constructor
-   * @param {number} [concurrency=1]
-   * @param {number} [size=Infinity]
-   * @param {...Type[]} elements
+   * @param {Concurrency} [concurrency=1 as Concurrency] 
+   * @param {Size} [size=Infinity as Size] 
+   * @param {...Type[]} elements 
    */
-  constructor(concurrency: number = 1, size: number = Infinity, ...elements: Type[]) {
+  constructor(
+    concurrency: Concurrency = 1 as Concurrency,
+    size: Size = Infinity as Size,
+    ...elements: Type[]
+  ) {
     super(size, ...elements);
     this.#concurrency = concurrency;
   }
