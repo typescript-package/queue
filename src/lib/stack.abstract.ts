@@ -1,3 +1,4 @@
+import { Elements } from "./elements.class";
 import { Queue as AbstractQueue } from "./queue.abstract";
 /**
  * @description A standard LIFO (Last In, First Out) queue.
@@ -6,7 +7,17 @@ import { Queue as AbstractQueue } from "./queue.abstract";
  * @class Stack
  * @template Type
  */
-export abstract class Stack<Type> {
+export abstract class Stack<Type, Size extends number> {
+  /**
+   * @description The `Elements` of array state type.
+   * @public
+   * @readonly
+   * @type {Elements<Type>}
+   */
+  public get elements(): Elements<Type> {
+    return this.#stack.elements;
+  }
+
   /**
    * @description The actual stack length.
    * @public
@@ -28,13 +39,13 @@ export abstract class Stack<Type> {
   }
 
   /**
-   * @description The `Array` stack state.
+   * @description The actual stack `Elements` state.
    * @public
    * @readonly
-   * @type {ArrayState<Type>}
+   * @type {readonly Type[]}
    */
-  public get stack() {
-    return this.#stack.queue;
+  public get state(): readonly Type[] {
+    return this.#stack.elements.state;
   }
 
   /**
@@ -53,11 +64,11 @@ export abstract class Stack<Type> {
    * Creates an instance of `Stack`.
    * @constructor
    * @param {number} [size=Infinity]
-   * @param {...Type[]} items
+   * @param {...Type[]} elements
    */
-  constructor(size: number = Infinity, ...items: Type[]) {
+  constructor(size: Size = Infinity as Size, ...elements: Type[]) {
     this.#size = size;
-    this.#stack = new (class Stack<Type> extends AbstractQueue<Type> {})(size, ...items);
+    this.#stack = new (class Stack<Type, Size extends number> extends AbstractQueue<Type, Size> {})(size, ...elements);
   }
 
   /**
@@ -71,33 +82,51 @@ export abstract class Stack<Type> {
   }
 
   /**
+   * @description Checks whether the stack is empty.
+   * @public
+   * @returns {boolean}
+   */
+  public isEmpty(): boolean {
+    return this.#stack.isEmpty();
+  }
+
+  /**
+   * @description Checks if the stack is full.
+   * @public
+   * @returns {boolean}
+   */
+  public isFull(): boolean {
+    return this.#stack.isFull();
+  }
+
+  /**
    * @description Returns the top element on the stack.
    * @public
    * @returns {(Type | undefined)}
    */
   public peek(): Type | undefined {
-    return this.stack.last();
+    return this.#stack.elements.last();
   }
 
   /**
    * @description Removes and returns the top element from the stack.
    * @public
-   * @returns {Type}
+   * @returns {(Type | undefined)} 
    */
-  public pop(): Type {
-    const last = this.stack.last();
-    this.#stack.length > 0 && this.stack.remove(this.#stack.length - 1);
+  public pop(): Type | undefined {
+    const last = this.peek();
+    this.#stack.length > 0 && this.#stack.elements.remove(this.#stack.length - 1);
     return last;
   }
 
   /**
    * @description Adds a new element on the stack.
    * @public
-   * @param {Type} item
+   * @param {Type} element
    * @returns {this}
    */
-  public push(item: Type): this {
-    this.stack.append(item);
+  public push(element: Type): this {
+    this.#stack.elements.append(element);
     return this;
   }
 }

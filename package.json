@@ -1,6 +1,6 @@
 {
   "name": "@typescript-package/queue",
-  "version": "0.0.1",
+  "version": "1.0.0-beta",
   "author": "wwwdev.io <dev@wwwdev.io>",
   "description": "A lightweight TypeScript library for managing various queue and stack structures.",
   "license": "MIT",

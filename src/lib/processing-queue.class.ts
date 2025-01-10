@@ -1,114 +1,109 @@
-import { Boolean as Processing } from "@typescript-package/state";
+// Abstract.
 import { Queue } from "./queue.abstract";
+// Class.
+import { Processing } from "./processing.class";
+// Type.
+import { ErrorCallback, ProcessCallback } from "../type";
 /**
- * @description A queue that processes items concurrently with a specified concurrency limit.
+ * @description A queue that processes elements concurrently with a specified concurrency limit.
  * @export
  * @class ProcessingQueue
  * @template Type
  * @extends {Queue<Type>}
  */
-export class ProcessingQueue<Type> extends Queue<Type> {
+export class ProcessingQueue<
+  Type,
+  Concurrency extends number = number,
+  Size extends number = number
+> extends Queue<Type, Size> {
   /**
-   * @description The maximum number of items that can be processed concurrently.
+   * @description
    * @public
    * @readonly
-   * @type {number}
+   * @type {Processing<Type, Concurrency>}
    */
-  public get concurrency() {
-    return this.#concurrency;
+  public get processing(): Processing<Type, Concurrency> {
+    return this.#processing;
   }
 
   /**
-   * @description A set containing all items that have been successfully processed.
-   * @public
-   * @readonly
-   * @type {Set<Type>}
+   * @description
+   * @type {Processing<Type, Concurrency>}
    */
-  public get processed() {
-    return this.#processed;
-  }
-
-  /**
-   * @description Privately stored current number of items being processed.
-   * @type {number}
-   */
-  #activeCount: number = 0;
-
-  /**
-   * @description Privately stored maximum concurrency level for processing.
-   * @type {number}
-   */
-  #concurrency;
-
-  /**
-   * @description Tracks whether the queue is processing items.
-   * @type {Processing}
-   */
-  #processing = new Processing(false);
-
-  /**
-   * @description Privately stored set of all processed items.
-   * @type {Set<Type>}
-   */
-  #processed: Set<Type> = new Set();
-
+  #processing;
+  
   /**
    * Creates an instance of child class.
    * @constructor
-   * @param {number} [concurrency=1]
-   * @param {number} [size=Infinity]
-   * @param {...Type[]} items
+   * @param {Concurrency} [concurrency=1 as Concurrency] 
+   * @param {Size} [size=Infinity as Size] 
+   * @param {...Type[]} elements 
    */
-  constructor(concurrency: number = 1, size: number = Infinity, ...items: Type[]) {
-    super(size, ...items);
-    this.#concurrency = concurrency;
+  constructor(
+    concurrency: Concurrency = 1 as Concurrency,
+    size: Size = Infinity as Size,
+    ...elements: Type[]
+  ) {
+    super(size, ...elements);
+    this.#processing = new Processing<Type, Concurrency>(concurrency);
   }
 
   /**
-   * @description Waits for all items in the queue to be processed and returns the set of processed items.
+   * @description Checks whether the queue processing is completed.
+   * @public
+   * @returns {boolean} 
+   */
+  public isCompleted(): boolean {
+    return super.length === 0 && this.#processing.activeCount === 0 && this.#processing.isActive(false);
+  } 
+  
+  //#region Public async
+  /**
+   * @description Waits for all elements in the queue to be processed and returns the set of processed elements.
    * @public
    * @async
    * @returns {Promise<Set<Type>>}
    */
-  public async isCompleted(): Promise<Set<Type>> {
+  public async onCompleted(): Promise<Set<Type>> {
     return new Promise<Set<Type>>((resolve, reject) => {
       const interval = setInterval(() => 
-        this.#processing.isTrue()
-        ? super.length === 0 && this.#processing.false() && resolve(this.#processed)
+        this.#processing.isActive()
+        ? super.length === 0 && resolve(this.#processing.processed)
         : clearInterval(interval)
       , 50);
     });
   }
 
-  /**
-   * @description Starts processing items in the queue using the provided callback function.
-   * @public
-   * @param {(item: Type) => void} callbackFn A function to process each item in the queue.
-   * @returns {void) => void}
-   */
-  public run(callbackFn: (item: Type) => void) {
-    this.#processing.true();
-    while (this.#activeCount < this.#concurrency && super.length > 0) {
-      const item = this.dequeue();
-      item && this.#process(item, callbackFn);
+  public async asyncRun(
+    callbackFn: ProcessCallback<Type>,
+    onError?: ErrorCallback<Type>,
+  ): Promise<void> {
+    const activeProcesses: Promise<void>[] = [];
+    const process = async (): Promise<void> => {
+      while (this.#processing.activeCount < this.#processing.concurrency && super.length > 0) {
+        const element = this.dequeue();
+        if (element) {
+          const task = this.#processing.asyncProcess(element, callbackFn, onError).finally(() => process());  
+          activeProcesses.push(task);
+          await activeProcesses;
+        }
+      }
     }
+    await process();
+    await this.#processing.complete();
   }
+  //#endregion Public async
 
   /**
-   * @description Processes a single item using the provided callback function.
-   * @param {Type} item The item to process.
-   * @param {(item: Type) => void} callbackFn A function to process the `item`.
-   * @returns {this}
+   * @description Starts processing elements in the queue using the provided callback function.
+   * @public
+   * @param {(element: Type) => void} callbackFn A function to process each element in the queue.
+   * @param {?(element: Type, error: unknown) => void} [onError] An optional function to handle the error.
+   * @returns {void) => void}
    */
-  #process(item: Type, callbackFn: (item: Type) => void): this {
-    this.#activeCount++;
-    try {
-      callbackFn(item);      
-    } finally {
-      this.#activeCount--;
-      this.#processed.add(item);
-      this.run(callbackFn);
+  public run(callbackFn: (element: Type) => void, onError?: (element: Type, error: unknown) => void) {
+    while (super.length > 0) {
+      this.#processing.process(this.dequeue(), callbackFn, onError);
     }
-    return this;
   }
 }

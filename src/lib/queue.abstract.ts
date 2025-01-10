@@ -1,5 +1,5 @@
-import { ArrayState as AbstractArrayState } from "@typescript-package/state";
-export class ArrayState<Type> extends AbstractArrayState<Type>{};
+// Class.
+import { Elements } from "./elements.class";
 /**
  * @description A standard FIFO (First In, First Out) queue.
  * @export
@@ -7,7 +7,17 @@ export class ArrayState<Type> extends AbstractArrayState<Type>{};
  * @class Queue
  * @template Type
  */
-export abstract class Queue<Type> {
+export abstract class Queue<Type, Size extends number = number> {
+  /**
+   * @description The `Elements` state holder.
+   * @public
+   * @readonly
+   * @type {Elements<Type>}
+   */
+  public get elements(): Elements<Type> {
+    return this.#elements;
+  }
+
   /**
    * @description The actual queue length.
    * @public
@@ -15,50 +25,50 @@ export abstract class Queue<Type> {
    * @type {number}
    */
   public get length(): number {
-    return this.#queue.length;
+    return this.#elements.length;
   }
 
   /**
    * @description The maximum queue size.
    * @public
    * @readonly
-   * @type {number}
+   * @type {Size}
    */
-  public get size(): number {
+  public get size(): Size {
     return this.#size;
   }
 
   /**
-   * @description The `Array` queue state.
+   * @description The actual queue `Elements` state - raw `array` state of the queue.
    * @public
    * @readonly
-   * @type {ArrayState<Type>}
+   * @type {readonly Type[]}
    */
-  public get queue() {
-    return this.#queue;
+  public get state(): readonly Type[] {
+    return this.#elements.state;
   }
 
   /**
-   * @description Privately stored maximum queue size.
-   * @type {number}
+   * @description Privately stored maximum queue size of generic type variable `Size`.
+   * @type {Size}
    */
-  #size;
+  #size: Size;
 
   /**
-   * @description Privately stored `Array` queue state.
-   * @type {ArrayState<Type>}
+   * @description Privately stored `Array` queue elements state of `Elements`.
+   * @type {Elements<Type>}
    */
-  #queue;
+  #elements: Elements<Type>;
 
   /**
-   * Creates an instance of `Queue`.
+   * Creates an instance of child class.
    * @constructor
-   * @param {number} [size=Infinity]
-   * @param {...Type[]} items
+   * @param {Size} [size=Infinity as Size] The maximum size of the `Queue`.
+   * @param {...Type[]} elements The arbitrary parameters of elements of  `Type` to add.
    */
-  constructor(size: number = Infinity, ...items: Type[]) {
+  constructor(size: Size = Infinity as Size, ...elements: Type[]) {
     this.#size = size;
-    this.#queue = new ArrayState(items);
+    this.#elements = new Elements(elements, size);
   }
 
   /**
@@ -67,7 +77,7 @@ export abstract class Queue<Type> {
    * @returns {this}
    */
   public clear(): this {
-    this.#queue.clear();
+    this.#elements.clear();
     return this;
   }
 
@@ -77,22 +87,22 @@ export abstract class Queue<Type> {
    * @returns {(Type | undefined)}
    */
   public dequeue(): Type | undefined {
-    const first = this.#queue.first();
-    this.#queue.remove(0);
+    const first = this.#elements.first();
+    this.#elements.remove(0);
     return first;
   }
 
   /**
    * @description Adds a new element to the queue.
    * @public
-   * @param {Type} item
+   * @param {Type} element The element of `Type` to add.
    * @returns {this}
    */
-  public enqueue(item: Type): this {
-    if (this.length === this.size) {
+  public enqueue(element: Type): this {
+    if (this.isFull()) {
       throw new Error(`Queue is full.`);
     }
-    this.#queue.append(item);
+    this.#elements.append(element);
     return this;
   }
 
@@ -111,7 +121,7 @@ export abstract class Queue<Type> {
    * @returns {boolean}
    */
   public isFull(): boolean {
-    return this.length === this.#size;
+    return this.#elements.isFull();
   }
 
   /**
@@ -120,6 +130,6 @@ export abstract class Queue<Type> {
    * @returns {Type}
    */
   public peek(): Type {
-    return this.#queue.first();
+    return this.#elements.first();
   }
 }
