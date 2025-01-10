@@ -24,6 +24,7 @@ A lightweight TypeScript library for managing various queue and stack structures
 * [Api](#api)
   * [`Elements`](#elements)
   * [`ProcessingQueue`](#processingqueue)
+  * [`Processing`](#processing)
   * [`Queue`](#queue)
   * [`Stack`](#stack)
 * [Git](#git)
@@ -143,6 +144,8 @@ processingQueue.run(element => console.log(`Processed`, element)); // Output: Pr
 // A set containing all elements that have been successfully processed.
 console.log(`processed, `, processingQueue.processed); // Output: Set(10)
 ```
+
+### `Processing`
 
 ### `Queue`
 
