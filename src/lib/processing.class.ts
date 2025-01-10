@@ -1,5 +1,5 @@
 // Class.
-import { Boolean as Active, State } from "@typescript-package/state";
+import { Boolean as Active, Boolean as Debug, State } from "@typescript-package/state";
 // Type.
 import { ErrorCallback, ProcessCallback } from "../type";
 /**
@@ -68,7 +68,13 @@ export class Processing<Type, Concurrency extends number = number> extends State
    * @type {Concurrency}
    */
   #concurrency: Concurrency;
-  
+
+  /**
+   * @description
+   * @type {Debug}
+   */
+  #debug = new Debug(false);
+
   /**
    * @description A set of processed elements.
    * @type {Set<Type>}
@@ -82,6 +88,15 @@ export class Processing<Type, Concurrency extends number = number> extends State
   constructor(concurrency: Concurrency) {
     super(new Set())
     this.#concurrency = concurrency;
+  }
+
+  /**
+   * @description Set the `Processing` to debug state.
+   * @public
+   */
+  public debug(): this {
+    this.#debug.true();
+    return this;
   }
 
   /**
@@ -100,25 +115,31 @@ export class Processing<Type, Concurrency extends number = number> extends State
     onError?: ErrorCallback<Type>,
     method: 'default' | 'race' = 'default'
   ): Promise<void> {
+    this.#consoleDebug("asyncRun started", { method, concurrency: this.#concurrency });
     switch(method) {
       case 'race':
+        this.#consoleDebug("Using 'race' method");
         for (const element of elements) {
+          this.#consoleDebug("Processing element with 'race'", { element, activeCount: this.#activeCount });
           this.#activeCount >= this.#concurrency && await Promise.race(super.state);
           this.asyncProcess(element, callbackFn, onError);
         }
         break
       default:
+        this.#consoleDebug("Using 'default' method");
         const iterator = elements[Symbol.iterator]();
-        const process = async (): Promise<void> => {
+        const process = async (): Promise<void> => {          
           while (this.#activeCount < this.#concurrency) {
             const { value: element, done } = iterator.next();
             if (done) break;
+            this.#consoleDebug("Processing element", { element, activeCount: this.#activeCount });
             this.asyncProcess(element, callbackFn, onError).finally(() => process());
           }
         };
         await process();
         break;
     }
+    this.#consoleDebug("asyncRun completed");
     await this.complete();
   }
 
@@ -145,9 +166,12 @@ export class Processing<Type, Concurrency extends number = number> extends State
     callbackFn: ProcessCallback<Type>,
     onError?: ErrorCallback<Type>
   ) {
+    this.#consoleDebug("run started", { elements });
     for (const element of elements) {
+      this.#consoleDebug("Processing element synchronously", { element });
       this.process(element, callbackFn, onError);
     }
+    this.#consoleDebug("run completed");
   }
 
   /**
@@ -164,35 +188,58 @@ export class Processing<Type, Concurrency extends number = number> extends State
     callbackFn: ProcessCallback<Type>,
     onError?: ErrorCallback<Type>
   ): Promise<void> {
+    this.#consoleDebug("asyncProcess started", { element, activeCount: this.#activeCount });
+
     // Activate the processing state.
     this.#active.isFalse() && this.#active.true();
+    this.#consoleDebug("Processing state activated", { active: this.#active.state });
+
     // Increase the active count.
     this.#activeCount++;
+    this.#consoleDebug("Incremented activeCount", { activeCount: this.#activeCount });
 
     // Create a task.
     const task = (async () => {
       try {
+        this.#consoleDebug("Processing element:", element);
         await callbackFn(element);
       } catch (error) {
+        this.#consoleDebug("Error occurred during processing:", { element, error });
         onError?.(element, error);
       } finally {
         this.#processed.add(element);
+        this.#consoleDebug("Element processed:", { element, processed: this.#processed.size });
       }
     })();
 
     // Add the task to the processing state.
     super.state.add(task);
+    this.#consoleDebug("Task added to processing state", { taskCount: super.state.size });
 
     try {
       await task;
     } finally {
       // Remove the task from the processing state.
       super.state.delete(task);
+      this.#consoleDebug("Task removed from processing state", { taskCount: super.state.size });
+
       // Decrease the active count.
       this.#activeCount--;
+      this.#consoleDebug("Decremented activeCount", { activeCount: this.#activeCount });
+
       // If active count is equal to `0` then deactivate the active processing state.
-      this.#activeCount === 0 && this.#active.false();
+      this.#activeCount === 0 && (this.#active.false(), this.#consoleDebug("Processing state deactivated", { active: this.#active.state }));
     }
+  }
+
+  /**
+   * @description Checks whether the `Processing` is active.
+   * @public
+   * @param {?boolean} [expected] An optional `boolean` type value to check the active state.
+   * @returns {boolean} 
+   */
+  public isActive(expected?: boolean): boolean {
+    return typeof expected === 'boolean' ? this.#active.isTrue() === expected : this.#active.isTrue();
   }
 
   /**
@@ -208,17 +255,43 @@ export class Processing<Type, Concurrency extends number = number> extends State
     callbackFn: ProcessCallback<Type>,
     onError?: ErrorCallback<Type>
   ): this {
+    this.#consoleDebug("process started", { element });
     this.#active.isFalse() && this.#active.true();
+    this.#consoleDebug("Processing state activated", { active: this.#active.state });
     if (element) {
       try {
+        this.#consoleDebug("Processing element", { element });
         callbackFn(element);
       } catch(error) {
+        this.#consoleDebug("Error during processing", { error, element });
         onError?.(element, error);
       } finally {
         this.#processed.add(element);
+        this.#consoleDebug("Element processed", { element, processedCount: this.#processed.size });
         this.#active.false();
+        this.#consoleDebug("Processing state deactivated", { active: this.#active.state });
       }  
     }
+    return this;
+  }
+
+  /**
+   * @description Unset the `Processing` from debug state.
+   * @public
+   */
+  public unDebug(): this {
+    this.#debug.false();
+    return this;
+  }
+
+  /**
+   * @description
+   * @param {string} message 
+   * @param {?*} [data] 
+   * @returns {this} 
+   */
+  #consoleDebug(message: string, data?: any): this {
+    this.#debug.isTrue() && console.debug(message, data || '');
     return this;
   }
 }
