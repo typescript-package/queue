@@ -4,6 +4,7 @@
 export {
   // Class.
   Elements,
+  Processing,
   // Abstract.
   ProcessingQueue,
   Queue,
