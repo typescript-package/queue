@@ -2,20 +2,31 @@ import { ProcessingQueue as AbstractProcessingQueue } from "../lib";
 
 export class ProcessingQueue<Type> extends AbstractProcessingQueue<Type> {}
 
+let processingQueue = new ProcessingQueue(
+  3, // concurrency
+  25, // size
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 // items
+);
+
+processingQueue.asyncRun((element) => console.log(`Processed, `, element, processingQueue.state)).then(() => {
+  console.log(`Completed`, processingQueue.state);
+});
+
+
 console.group(`ProcessingQueue`);
 
 // Initialize the `ProcessingQueue`.
-let processingQueue = new ProcessingQueue(
-  2, // concurrency
+processingQueue = new ProcessingQueue(
+  3, // concurrency
   10, // size
   1, 2, 3 // items
 );
 
 // The maximum number of elements that can be processed concurrently.
-console.log(`concurrency, `, processingQueue.concurrency); // Output: 2
+console.log(`concurrency, `, processingQueue.processing.concurrency); // Output: 2
 
 // A set containing all elements that have been successfully processed.
-console.log(`processed, `, processingQueue.processed); // Output: Set(0)
+console.log(`processed, `, processingQueue.processing.processed); // Output: Set(0)
 
 // Checks whether the queue is empty.
 console.log(`isEmpty(), `, processingQueue.isEmpty()); // Output: false
@@ -54,20 +65,22 @@ processingQueue.enqueue(5).enqueue(6).enqueue(7).enqueue(8).enqueue(9).enqueue(1
 console.log(`state, `, processingQueue.state); // Output: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
 // Waits for all elements in the queue to be processed and returns the set of processed elements.
-processingQueue.isCompleted().then(
+processingQueue.onCompleted().then(
   processed => console.log(`Completed`, processed), // Output: Completed Set(10)
   reason => console.log(reason)
 );
 
 // Starts processing elements in the queue using the provided callback function.
-processingQueue.run(element => console.log(`Processed`, element)); // Output: Processed {element}
+// processingQueue.run(element => console.log(`Processed. `, element)); // Output: Processed {element}
+
+processingQueue.asyncRun(element => console.log(`Processed. `, element)).finally(() => console.log(`Async Run Completed.`)); // Output: Processed {element}
 
 // A set containing all elements that have been successfully processed.
-console.log(`processed, `, processingQueue.processed); // Output: Set(10)
+console.log(`processed, `, processingQueue.processing.processed); // Output: Set(10)
 
 console.groupEnd();
 
-describe(`ReverseQueue`, () => {
+describe(`ProcessingQueue`, () => {
   beforeEach(() => processingQueue = new ProcessingQueue(2, 10, 1, 2, 3));
   it(`enqueue()`, () => expect(processingQueue.enqueue(4).length).toEqual(4));
   it(`dequeue()`, () => {
