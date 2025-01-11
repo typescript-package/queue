@@ -10,7 +10,7 @@ import { ErrorCallback, ProcessCallback } from "../type";
  * @template Type 
  * @extends {Processable}
  */
-export class Tasks<Concurrency extends number> extends Processable {
+export class Tasks<Type = any, Concurrency extends number = number> extends Processable {
   /**
    * @description
    * @public
@@ -22,14 +22,14 @@ export class Tasks<Concurrency extends number> extends Processable {
   }
 
   /**
-   * @description The set of processed elements.
+   * @description
    * @public
    * @readonly
    * @type {Set<Type>}
    */
-  // public get processed(): Set<Type> {
-  //   return this.#processed;
-  // }
+  public get processed(): Set<Type> {
+    return this.#processed;
+  }
 
   /**
    * @description
@@ -43,7 +43,7 @@ export class Tasks<Concurrency extends number> extends Processable {
 
   /**
    * @description
-   * @type {*}
+   * @type {Active}
    */
   #active = new Active(false);
 
@@ -63,15 +63,13 @@ export class Tasks<Concurrency extends number> extends Processable {
    * @description A set of processed elements.
    * @type {Set<Type>}
    */
-  #processed: Set<any> = new Set();
+  #processed: Set<Type> = new Set();
 
   /**
    * @description
-   * @type {*}
+   * @type {Processing}
    */
   #processing;
-
-  #tasks: Set<Promise<void>> = new Set();
 
   /**
    * Creates an instance of `Tasks`.
@@ -95,7 +93,7 @@ export class Tasks<Concurrency extends number> extends Processable {
   }
 
   /**
-   * @description Runs asynchronous single processing task on the `element`.
+   * @description Runs asynchronous single processing on the `element`.
    * @public
    * @async
    * @param {Type} element The element to process.
@@ -103,7 +101,7 @@ export class Tasks<Concurrency extends number> extends Processable {
    * @param {ErrorCallback<Type>} [onError] An optional error handler.
    * @returns {Promise<void>}
    */
-  public async asyncProcess<Type>(
+  public async asyncProcess(
     element: Type,
     callbackFn: ProcessCallback<Type>,
     onError?: ErrorCallback<Type>,
@@ -113,7 +111,7 @@ export class Tasks<Concurrency extends number> extends Processable {
       throw new Error(`Enable the functionality to use the \`asyncProcess()\` method.`);
     }
     this.#consoleDebug("asyncProcess started", { element });
-    // Create a task.
+    // Create a promise.
     const task = (async () => {
       try {
         this.#consoleDebug("Processing element:", element);
@@ -141,7 +139,7 @@ export class Tasks<Concurrency extends number> extends Processable {
    * @param {('default' | 'race')} [method='default'] 
    * @returns {Promise<void>} 
    */
-  public async asyncRun<Type>(
+  public async asyncRun(
     elements: Iterable<Type>,
     callbackFn: ProcessCallback<Type>,
     onError?: ErrorCallback<Type>,
@@ -154,16 +152,16 @@ export class Tasks<Concurrency extends number> extends Processable {
     this.#consoleDebug("asyncRun started", { method, concurrency: this.#concurrency });
     switch(method) {
       case 'race':
-        // this.#consoleDebug("Using 'race' method");
+        this.#consoleDebug("Using 'race' method");
         for (const element of elements) {
           this.#consoleDebug("Processing element with 'race'", { element, activeCount: this.#processing.activeCount });
-          this.#processing.activeCount >= this.#concurrency && await Promise.race([...this.#processing.state]);
+          this.#processing.activeCount >= this.#concurrency && await Promise.race(this.#processing.state);
           this.asyncProcess(element, callbackFn, onError, onProcessed);
         }
         break
       case 'all':
       default:
-        this.#consoleDebug("Using the 'default' method");
+        this.#consoleDebug("Using the 'default' / 'all' method");
         const iterator = elements[Symbol.iterator]();
         // Create the async process for the task.
         const process = async (): Promise<void> => {
@@ -173,12 +171,12 @@ export class Tasks<Concurrency extends number> extends Processable {
             this.#consoleDebug("Processing element with default", { element, concurrency: this.#concurrency, activeCount: this.#processing.activeCount });
             const task = this
               .asyncProcess(element, callbackFn, onError, onProcessed)
-              .finally(() => (this.#tasks.delete(task), process()));
-            this.#consoleDebug("Add the processed task to the tasks.", {element, task});
-            this.#tasks.add(task);
+              .finally(() => (this.#processing.delete(task), process()));
+            this.#consoleDebug("Add the processed task to the processing.", {element, task});
+            this.#processing.add(task, false);
           }
           // Wait for the tasks to finish.
-          await Promise.all(this.#tasks);
+          await Promise.all(this.#processing.state)
         };
         await process();
         break;
@@ -196,7 +194,7 @@ export class Tasks<Concurrency extends number> extends Processable {
    * @param {?ErrorCallback<Type>} [onError] An optional callback function to handle errors during processing.
    * @returns {this} The current instance for method chaining.
    */
-  public process<Type>(
+  public process(
     element: Type | undefined,
     callbackFn: ProcessCallback<Type>,
     onError?: ErrorCallback<Type>,
@@ -235,7 +233,7 @@ export class Tasks<Concurrency extends number> extends Processable {
    * @param {ProcessCallback<Type>} callbackFn A function that will process each element synchronously.
    * @param {?ErrorCallback<Type>} [onError] Optional callback for handling errors that occur during processing.
    */
-  public run<Type>(
+  public run(
     elements: Iterable<Type>,
     callbackFn: ProcessCallback<Type>,
     onError?: ErrorCallback<Type>,
