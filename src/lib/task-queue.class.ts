@@ -2,6 +2,7 @@
 import { Queue } from "./queue.abstract";
 // Class.
 import { Processing } from "./processing.class";
+import { Tasks } from "./tasks.class";
 // Type.
 import { ErrorCallback, ProcessCallback } from "../type";
 /**
@@ -11,26 +12,30 @@ import { ErrorCallback, ProcessCallback } from "../type";
  * @template Type
  * @extends {Queue<Type>}
  */
-export class ProcessingQueue<
+export class TaskQueue<
   Type,
   Concurrency extends number = number,
   Size extends number = number
 > extends Queue<Type, Size> {
+  public get concurrency() {
+    return this.#tasks.concurrency;
+  }
+
+  // public get processed() {
+  //   return this.#tasks.processed;
+  // }
+
   /**
    * @description
    * @public
    * @readonly
    * @type {Processing<Type, Concurrency>}
    */
-  public get processing(): Processing<Type, Concurrency> {
-    return this.#processing;
+  public get processing(): Processing {
+    return this.#tasks.processing;
   }
 
-  /**
-   * @description
-   * @type {Processing<Type, Concurrency>}
-   */
-  #processing;
+  #tasks;
   
   /**
    * Creates an instance of child class.
@@ -45,7 +50,7 @@ export class ProcessingQueue<
     ...elements: Type[]
   ) {
     super(size, ...elements);
-    this.#processing = new Processing<Type, Concurrency>(concurrency);
+    this.#tasks = new Tasks<Concurrency>(true, concurrency);
   }
 
   /**
@@ -54,7 +59,7 @@ export class ProcessingQueue<
    * @returns {boolean} 
    */
   public isCompleted(): boolean {
-    return super.length === 0 && this.#processing.activeCount === 0 && this.#processing.isActive(false);
+    return super.length === 0 && this.#tasks.processing.activeCount === 0 && this.#tasks.processing.isActive(false);
   } 
   
   //#region Public async
@@ -67,8 +72,8 @@ export class ProcessingQueue<
   public async onCompleted(): Promise<Set<Type>> {
     return new Promise<Set<Type>>((resolve, reject) => {
       const interval = setInterval(() => 
-        this.#processing.isActive()
-        ? super.length === 0 && resolve(this.#processing.processed)
+        this.#tasks.processing.isActive()
+        ? super.length === 0 && resolve([] as any) // TODO: this.#tasks.processed
         : clearInterval(interval)
       , 50);
     });
@@ -80,17 +85,17 @@ export class ProcessingQueue<
   ): Promise<void> {
     const activeProcesses: Promise<void>[] = [];
     const process = async (): Promise<void> => {
-      while (this.#processing.activeCount < this.#processing.concurrency && super.length > 0) {
+      while (this.#tasks.processing.activeCount < this.#tasks.concurrency && super.length > 0) {
         const element = this.dequeue();
         if (element) {
-          const task = this.#processing.asyncProcess(element, callbackFn, onError).finally(() => process());  
+          const task = this.#tasks.asyncProcess(element, callbackFn, onError).finally(() => process());  
           activeProcesses.push(task);
           await activeProcesses;
         }
       }
     }
     await process();
-    await this.#processing.complete();
+    await this.#tasks.processing.complete();
   }
   //#endregion Public async
 
@@ -103,7 +108,7 @@ export class ProcessingQueue<
    */
   public run(callbackFn: (element: Type) => void, onError?: (element: Type, error: unknown) => void) {
     while (super.length > 0) {
-      this.#processing.process(this.dequeue(), callbackFn, onError);
+      this.#tasks.process(this.dequeue(), callbackFn, onError);
     }
   }
 }
