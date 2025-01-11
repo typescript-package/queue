@@ -17,13 +17,25 @@ export class TaskQueue<
   Concurrency extends number = number,
   Size extends number = number
 > extends Queue<Type, Size> {
+  /**
+   * @description
+   * @public
+   * @readonly
+   * @type {Concurrency}
+   */
   public get concurrency() {
     return this.#tasks.concurrency;
   }
 
-  // public get processed() {
-  //   return this.#tasks.processed;
-  // }
+  /**
+   * @description
+   * @public
+   * @readonly
+   * @type {Set<Type>}
+   */
+  public get processed(): Set<Type> {
+    return this.#tasks.processed;
+  }
 
   /**
    * @description
@@ -35,6 +47,10 @@ export class TaskQueue<
     return this.#tasks.processing;
   }
 
+  /**
+   * @description
+   * @type {Tasks<Type, Concurrency>}
+   */
   #tasks;
   
   /**
@@ -50,7 +66,7 @@ export class TaskQueue<
     ...elements: Type[]
   ) {
     super(size, ...elements);
-    this.#tasks = new Tasks<Concurrency>(true, concurrency);
+    this.#tasks = new Tasks<Type, Concurrency>(true, concurrency);
   }
 
   /**
@@ -82,22 +98,24 @@ export class TaskQueue<
   public async asyncRun(
     callbackFn: ProcessCallback<Type>,
     onError?: ErrorCallback<Type>,
-  ): Promise<void> {
-    const activeProcesses: Promise<void>[] = [];
-    const process = async (): Promise<void> => {
+  ): Promise<Set<Type>> {
+    const process = async () => {
       while (this.#tasks.processing.activeCount < this.#tasks.concurrency && super.length > 0) {
         const element = this.dequeue();
         if (element) {
-          const task = this.#tasks.asyncProcess(element, callbackFn, onError).finally(() => process());  
-          activeProcesses.push(task);
-          await activeProcesses;
+          const task = this.#tasks
+            .asyncProcess(element, callbackFn, onError)
+            .finally(() => (this.#tasks.processing.delete(task), process()));
+          this.#tasks.processing.add(task, false);
         }
       }
+      this.#tasks.processing.activeCount > 0 && await Promise.all(this.#tasks.processing.state);
     }
     await process();
     await this.#tasks.processing.complete();
+    return this.#tasks.processed;
   }
-  //#endregion Public async
+  // #endregion Public async
 
   /**
    * @description Starts processing elements in the queue using the provided callback function.
