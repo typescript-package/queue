@@ -1,14 +1,14 @@
 // Class.
 import { Boolean as Debug, State } from "@typescript-package/state";
 /**
- * @description Class designed for asynchronous with concurrency control and synchronous processing the elements of `Type`.
+ * @description Class designed for asynchronous processing the promises of `void`.
  * @export
  * @class Processing
- * @extends {State<Set<Promise<void>>>} The state for active processing tasks, tracking the status of asynchronous operations.
+ * @extends {State<Set<Promise<void>>>} The state for active processing promises, tracking the status of asynchronous operations.
  */
 export class Processing extends State<Set<Promise<void>>> {
   /**
-   * @description Tracks whether the queue is processing elements.
+   * @description Tracks whether there are actively processed promises.
    * @public
    * @readonly
    * @type {boolean}
@@ -18,7 +18,7 @@ export class Processing extends State<Set<Promise<void>>> {
   }
 
   /**
-   * @description A current number of elements being processed.
+   * @description A current number of promises being processed.
    * @public
    * @readonly
    * @type {number}
@@ -28,7 +28,7 @@ export class Processing extends State<Set<Promise<void>>> {
   }
 
   /**
-   * @description Returns the first task from processing.
+   * @description Returns the first promise from processing.
    * @public
    * @readonly
    * @type {Promise<void>}
@@ -38,7 +38,7 @@ export class Processing extends State<Set<Promise<void>>> {
   }
 
   /**
-   * @description Returns the last task from processing.
+   * @description Returns the last promise from processing.
    * @public
    * @readonly
    * @type {Promise<void>}
@@ -73,16 +73,16 @@ export class Processing extends State<Set<Promise<void>>> {
   /**
    * @description
    * @public
-   * @param {Promise<void>} task 
+   * @param {Promise<void>} promise 
    * @returns {this} 
    */
-  public async add(task: Promise<void>): Promise<void> {
-    this.#consoleDebug("Task added to processing state", { active: this.active, activeCount: this.activeCount });
-    super.state.add(task);
-    task.finally(() => {
-      this.#consoleDebug("activeCount state before removing the task", { activeCount: this.activeCount })
-      super.state.delete(task);
-      this.#consoleDebug("Task removed from processing state", { activeCount: this.activeCount })
+  public async add(promise: Promise<void>): Promise<void> {
+    this.#consoleDebug("`Promise` added to processing state", { active: this.active, activeCount: this.activeCount });
+    super.state.add(promise);
+    promise.finally(() => {
+      this.#consoleDebug("`activeCount` state before removing the `Promise`", { activeCount: this.activeCount })
+      super.state.delete(promise);
+      this.#consoleDebug("`Promise` removed from processing state", { activeCount: this.activeCount })
     });
   }
 
@@ -107,7 +107,7 @@ export class Processing extends State<Set<Promise<void>>> {
   }
 
   /**
-   * @description Unset the `Processing` from debug state.
+   * @description Unset the `Processing` from the debug state.
    * @public
    */
   public unDebug(): this {
@@ -116,7 +116,7 @@ export class Processing extends State<Set<Promise<void>>> {
   }
 
   /**
-   * @description
+   * @description Display the console debug on debug state `true`.
    * @param {string} message 
    * @param {?*} [data] 
    * @returns {this} 
