@@ -76,14 +76,11 @@ export class Processing extends State<Set<Promise<void>>> {
    * @param {Promise<void>} promise 
    * @returns {this} 
    */
-  public async add(promise: Promise<void>): Promise<void> {
-    this.#consoleDebug("`Promise` added to processing state", { active: this.active, activeCount: this.activeCount });
+  public add(promise: Promise<void>, remove: boolean = true): this {
     super.state.add(promise);
-    promise.finally(() => {
-      this.#consoleDebug("`activeCount` state before removing the `Promise`", { activeCount: this.activeCount })
-      super.state.delete(promise);
-      this.#consoleDebug("`Promise` removed from processing state", { activeCount: this.activeCount })
-    });
+    this.#consoleDebug("`Promise` added to processing state", { active: this.active, activeCount: this.activeCount });
+    remove === true && promise.finally(() => this.delete(promise));
+    return this;
   }
 
   /**
@@ -94,6 +91,19 @@ export class Processing extends State<Set<Promise<void>>> {
    */
   public async complete(): Promise<void> {
     await Promise.all(super.state);
+  }
+
+  /**
+   * @description
+   * @public
+   * @param {Promise<void>} promise 
+   * @returns {this} 
+   */
+  public delete(promise: Promise<void> = this.first): this {
+    this.#consoleDebug("`activeCount` state before removing the `Promise`", { activeCount: this.activeCount })
+    super.state.delete(promise);
+    this.#consoleDebug("`Promise` removed from processing state", { activeCount: this.activeCount });
+    return this;
   }
 
   /**
