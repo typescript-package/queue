@@ -8,14 +8,8 @@
     "access": "public",
     "registry": "https://registry.npmjs.org"
   },
-  "devDependencies": {},
   "peerDependencies": {
     "@typescript-package/state": "^2.0.0"
-  },
-  "scripts": {
-    "prepublishOnly": "npm run pkg && npm run clean",
-    "pkg": "npm pkg delete dependencies",
-    "clean": "npm pkg delete scripts"
   },
   "repository": {
     "type": "git",
