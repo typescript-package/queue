@@ -78,7 +78,7 @@ export class Processing extends State<Set<Promise<void>>> {
    */
   public async add(task: Promise<void>): Promise<void> {
     this.#consoleDebug("Task added to processing state", { active: this.active, activeCount: this.activeCount });
-    await super.state.add(task);
+    super.state.add(task);
     task.finally(() => {
       this.#consoleDebug("activeCount state before removing the task", { activeCount: this.activeCount })
       super.state.delete(task);
