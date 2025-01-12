@@ -6,11 +6,13 @@ import { Tasks } from "./tasks.class";
 // Type.
 import { ErrorCallback, ProcessCallback } from "../type";
 /**
- * @description A queue that processes elements concurrently with a specified concurrency limit.
+ * @description A task queue that processes elements concurrently with a specified concurrency limit.
  * @export
- * @class ProcessingQueue
- * @template Type
- * @extends {Queue<Type>}
+ * @class TaskQueue
+ * @template Type 
+ * @template {number} [Concurrency=number] 
+ * @template {number} [Size=number] 
+ * @extends {Queue<Type, Size>}
  */
 export class TaskQueue<
   Type,
@@ -18,7 +20,7 @@ export class TaskQueue<
   Size extends number = number
 > extends Queue<Type, Size> {
   /**
-   * @description
+   * @description The maximum number of elements that can be processed concurrently.
    * @public
    * @readonly
    * @type {Concurrency}
@@ -28,7 +30,7 @@ export class TaskQueue<
   }
 
   /**
-   * @description
+   * @description Returns the processed elements.
    * @public
    * @readonly
    * @type {Set<Type>}
@@ -38,7 +40,7 @@ export class TaskQueue<
   }
 
   /**
-   * @description
+   * @description Returns the `Processing` object that contains active tasks.
    * @public
    * @readonly
    * @type {Processing<Type, Concurrency>}
@@ -48,7 +50,7 @@ export class TaskQueue<
   }
 
   /**
-   * @description
+   * @description The `Tasks` object to handle the processing.
    * @type {Tasks<Type, Concurrency>}
    */
   #tasks;
@@ -95,6 +97,14 @@ export class TaskQueue<
     });
   }
 
+  /**
+   * @description Starts asynchronous processing queue elements with concurrency control.
+   * @public
+   * @async
+   * @param {ProcessCallback<Type>} callbackFn The function to process each element.
+   * @param {?ErrorCallback<Type>} [onError] An optional error handler.
+   * @returns {Promise<Set<Type>>} 
+   */
   public async asyncRun(
     callbackFn: ProcessCallback<Type>,
     onError?: ErrorCallback<Type>,
