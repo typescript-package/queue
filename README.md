@@ -56,6 +56,8 @@ import {
 
 ### `Elements`
 
+`Array` state elements in data structures such as `Stack` and `Queue`.
+
 ```typescript
 import { Elements } from '@typescript-package/queue';
 
@@ -82,6 +84,8 @@ console.log(elements.state); // Output: [127, 1, 2, 10, 3, 4, 5]
 ```
 
 ### `Processing`
+
+Class designed for asynchronous processing the promises of `void`.
 
 ```typescript
 import { Processing } from '@typescript-package/queue';
@@ -183,6 +187,8 @@ console.groupEnd();
 
 ### `Tasks`
 
+A class designed to manage and execute a collection of asynchronous tasks with concurrently control or synchronous tasks.
+
 ```typescript
 import { Tasks } from '@typescript-package/queue';
 
@@ -206,6 +212,8 @@ console.groupEnd();
 ```
 
 ### `Queue`
+
+A standard FIFO (First In, First Out) queue.
 
 ```typescript
 import { Queue } from '@typescript-package/queue';
@@ -258,6 +266,8 @@ console.log(`state,`, queue.state); // Output: []
 ```
 
 ### `Stack`
+
+A standard LIFO (Last In, First Out) queue.
 
 ```typescript
 import { Stack } from '@typescript-package/queue';
