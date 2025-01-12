@@ -62,15 +62,6 @@ export class Processing extends State<Set<Promise<void>>> {
   }
 
   /**
-   * @description Set the `Processing` to debug state.
-   * @public
-   */
-  public debug(): this {
-    this.#debug.true();
-    return this;
-  }
-
-  /**
    * @description
    * @public
    * @param {Promise<void>} promise 
@@ -90,7 +81,23 @@ export class Processing extends State<Set<Promise<void>>> {
    * @returns {Promise<void>} 
    */
   public async complete(): Promise<void> {
-    await Promise.all(super.state);
+    this.#consoleDebug("Invoked `Processing.complete()` to wait for all processes from the state ", { activeCount: this.activeCount })
+    const promise = Promise.all(super.state);
+    await promise;
+    if (this.#debug.isTrue()) {
+      promise.finally(() => 
+        this.#consoleDebug("`Processing.complete()` finally method invoked.", { activeCount: this.activeCount })
+      );
+    }
+  }
+
+  /**
+   * @description Set the `Processing` to debug state.
+   * @public
+   */
+  public debug(): this {
+    this.#debug.true();
+    return this;
   }
 
   /**
