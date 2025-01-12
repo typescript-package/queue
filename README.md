@@ -114,6 +114,8 @@ console.groupEnd();
 
 ### `TaskQueue`
 
+A task queue that processes elements concurrently with a specified concurrency limit.
+
 ```typescript
 import { TaskQueue } from '@typescript-package/queue';
 
