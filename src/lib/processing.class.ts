@@ -62,9 +62,9 @@ export class Processing extends State<Set<Promise<void>>> {
   }
 
   /**
-   * @description
+   * @description Adds the promise to the processing state.
    * @public
-   * @param {Promise<void>} promise 
+   * @param {Promise<void>} promise The promise of `void` to add.
    * @returns {this} 
    */
   public add(promise: Promise<void>, remove: boolean = true): this {
@@ -92,7 +92,7 @@ export class Processing extends State<Set<Promise<void>>> {
   }
 
   /**
-   * @description Set the `Processing` to debug state.
+   * @description Sets the `Processing` to debug state.
    * @public
    */
   public debug(): this {
@@ -101,7 +101,7 @@ export class Processing extends State<Set<Promise<void>>> {
   }
 
   /**
-   * @description
+   * @description Removes the specified promise from the processing state.
    * @public
    * @param {Promise<void>} promise 
    * @returns {this} 
