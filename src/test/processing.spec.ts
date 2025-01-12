@@ -1,6 +1,25 @@
 import { Processing } from "../lib/processing.class";
 
+console.group(`Processing`);
+
 let processing = new Processing();
+
+// Adds the promise to the processing and on finally remove.
+processing.add(new Promise((resolve, reject) => resolve()));
+
+// Adds the promise to the processing without removing.
+processing.add(new Promise((resolve, reject) => resolve()));
+
+// Returns the first process.
+console.log(`first, `, processing.first);
+
+// Returns the last process.
+console.log(`last, `, processing.last);
+
+// Removes the first process.
+processing.delete();
+
+console.groupEnd();
 
 describe(`Processing`, () => {
   beforeEach(() => {

@@ -20,7 +20,7 @@ taskQueue
 
 console.group(`TaskQueue`);
 
-// Initialize the `ProcessingQueue`.
+// Initialize the `TaskQueue`.
 taskQueue = new TaskQueue(
   3, // concurrency
   10, // size
@@ -31,7 +31,7 @@ taskQueue = new TaskQueue(
 console.log(`concurrency, `, taskQueue.concurrency); // Output: 2
 
 // A set containing all elements that have been successfully processed.
-// console.log(`processed, `, taskQueue.processed); // Output: Set(0)
+console.log(`processed, `, taskQueue.processed); // Output: Set(0)
 
 // Checks whether the queue is empty.
 console.log(`isEmpty(), `, taskQueue.isEmpty()); // Output: false
@@ -81,7 +81,7 @@ taskQueue.onCompleted().then(
 taskQueue.asyncRun(element => console.log(`TaskQueue processed. `, element)).finally(() => console.log(`TaskQueue async Run Completed.`)); // Output: Processed {element}
 
 // A set containing all elements that have been successfully processed.
-// console.log(`processed, `, taskQueue.processed); // Output: Set(10) // TODO:
+console.log(`processed, `, taskQueue.processed); // Output: Set(10)
 
 console.groupEnd();
 
