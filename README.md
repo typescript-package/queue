@@ -23,8 +23,9 @@ A lightweight TypeScript library for managing various queue and stack structures
 * [Installation](#installation)
 * [Api](#api)
   * [`Elements`](#elements)
-  * [`ProcessingQueue`](#processingqueue)
   * [`Processing`](#processing)
+  * [`TaskQueue`](#taskqueue)
+  * [`Tasks`](#tasks)
   * [`Queue`](#queue)
   * [`Stack`](#stack)
 * [Git](#git)
@@ -44,8 +45,10 @@ npm install @typescript-package/queue
 import {
   // Class.
   Elements,
+  Processing,
+  TaskQueue,
+  Tasks,
   // Abstract.
-  ProcessingQueue,
   Queue,
   Stack
 } from '@typescript-package/queue';
@@ -78,74 +81,129 @@ elements.update(0, 127);
 console.log(elements.state); // Output: [127, 1, 2, 10, 3, 4, 5]
 ```
 
-### `ProcessingQueue`
+### `Processing`
 
 ```typescript
-import { ProcessingQueue } from '@typescript-package/queue';
+import { Processing } from '@typescript-package/queue';
 
-// Initialize the `ProcessingQueue`.
-let processingQueue = new ProcessingQueue(
-  2, // concurrency
+console.group(`Processing`);
+
+let processing = new Processing();
+
+// Adds the promise to the processing and on finally remove.
+processing.add(new Promise((resolve, reject) => resolve()));
+
+// Adds the promise to the processing without removing.
+processing.add(new Promise((resolve, reject) => resolve()));
+
+// Returns the first process.
+console.log(`first, `, processing.first);
+
+// Returns the last process.
+console.log(`last, `, processing.last);
+
+// Removes the first process.
+processing.delete();
+
+console.groupEnd();
+```
+
+### `TaskQueue`
+
+```typescript
+import { TaskQueue } from '@typescript-package/queue';
+
+console.group(`TaskQueue`);
+
+// Initialize the `TaskQueue`.
+taskQueue = new TaskQueue(
+  3, // concurrency
   10, // size
   1, 2, 3 // items
 );
 
 // The maximum number of elements that can be processed concurrently.
-console.log(`concurrency, `, processingQueue.concurrency); // Output: 2
+console.log(`concurrency, `, taskQueue.concurrency); // Output: 2
 
 // A set containing all elements that have been successfully processed.
-console.log(`processed, `, processingQueue.processed); // Output: Set(0)
+console.log(`processed, `, taskQueue.processed); // Output: Set(0)
 
 // Checks whether the queue is empty.
-console.log(`isEmpty(), `, processingQueue.isEmpty()); // Output: false
+console.log(`isEmpty(), `, taskQueue.isEmpty()); // Output: false
 
 // Checks whether the queue is full.
-console.log(`isFull(), `, processingQueue.isFull()); // Output: false
+console.log(`isFull(), `, taskQueue.isFull()); // Output: false
 
 // The maximum queue size.
-console.log(`size, `, processingQueue.size); // Output: 10
+console.log(`size, `, taskQueue.size); // Output: 10
 
 // The actual queue Elements state - raw array state of the queue.
-console.log(`state, `, processingQueue.state); // Output: [1, 2, 3]
+console.log(`state, `, taskQueue.state); // Output: [1, 2, 3] // TODO:
 
 // The actual queue length.
-console.log(`length, `, processingQueue.length); // Output: 3
+console.log(`length, `, taskQueue.length); // Output: 3
 
 // Adds a new element to the queue.
-console.log(`enqueue(4), `, processingQueue.enqueue(4));
+console.log(`enqueue(4), `, taskQueue.enqueue(4));
 
 // The actual queue length.
-console.log(`length, `, processingQueue.length); // Output: 4
+console.log(`length, `, taskQueue.length); // Output: 4
 
 // Returns the first element in the queue.
-console.log(`peek(), `, processingQueue.peek()); // Output: 1
+console.log(`peek(), `, taskQueue.peek()); // Output: 1
 
 // Returns the first element in the queue.
-console.log(`dequeue(), `, processingQueue.dequeue()); // Output: 1
+console.log(`dequeue(), `, taskQueue.dequeue()); // Output: 1
 
 // The actual queue length.
-console.log(`length, `, processingQueue.length); // Output: 3
+console.log(`length, `, taskQueue.length); // Output: 3
 
 // Adds to the full.
-processingQueue.enqueue(5).enqueue(6).enqueue(7).enqueue(8).enqueue(9).enqueue(10).enqueue(11);
+taskQueue.enqueue(5).enqueue(6).enqueue(7).enqueue(8).enqueue(9).enqueue(10).enqueue(11);
 
 // The actual queue Elements state - raw array state of the queue.
-console.log(`state, `, processingQueue.state); // Output: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+console.log(`state, `, taskQueue.state); // Output: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
 // Waits for all elements in the queue to be processed and returns the set of processed elements.
-processingQueue.isCompleted().then(
-  processed => console.log(`Completed`, processed), // Output: Completed Set(10)
+taskQueue.onCompleted().then(
+  processed => console.log(`TaskQueue completed`, processed), // Output: Completed Set(10)
   reason => console.log(reason)
 );
 
 // Starts processing elements in the queue using the provided callback function.
-processingQueue.run(element => console.log(`Processed`, element)); // Output: Processed {element}
+// processingQueue.run(element => console.log(`Processed. `, element)); // Output: Processed {element}
+
+taskQueue.asyncRun(element => console.log(`TaskQueue processed. `, element)).finally(() => console.log(`TaskQueue async Run Completed.`)); // Output: Processed {element}
 
 // A set containing all elements that have been successfully processed.
-console.log(`processed, `, processingQueue.processed); // Output: Set(10)
+console.log(`processed, `, taskQueue.processed); // Output: Set(10)
+
+console.groupEnd();
 ```
 
-### `Processing`
+### `Tasks`
+
+```typescript
+import { Tasks } from '@typescript-package/queue';
+
+console.group(`Tasks`);
+
+let tasks = new Tasks<number>(true, 3);
+
+tasks.debug().asyncRun(
+  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  element => {},
+  () => {},
+  element => {},
+  'default'
+).then(processed => {
+  console.log(`then()`, processed);
+}).finally(() => {
+  console.log(`finally()`);
+})
+
+console.groupEnd();
+```
 
 ### `Queue`
 
