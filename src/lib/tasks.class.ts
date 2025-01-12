@@ -4,7 +4,7 @@ import { Processing } from "./processing.class";
 // Type.
 import { ErrorCallback, ProcessCallback } from "../type";
 /**
- * @description
+ * @description A class designed to manage and execute a collection of asynchronous tasks with concurrently control or synchronous tasks.
  * @export
  * @class Tasks
  * @template Type 
@@ -12,7 +12,7 @@ import { ErrorCallback, ProcessCallback } from "../type";
  */
 export class Tasks<Type = any, Concurrency extends number = number> extends Processable {
   /**
-   * @description
+   * @description The maximum number of elements that can be processed concurrently.
    * @public
    * @readonly
    * @type {Concurrency}
@@ -22,7 +22,7 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
   }
 
   /**
-   * @description
+   * @description Returns the processed elements.
    * @public
    * @readonly
    * @type {Set<Type>}
@@ -32,7 +32,7 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
   }
 
   /**
-   * @description
+   * @description Returns the `Processing` object that contains active tasks.
    * @public
    * @readonly
    * @type {Processing<Type, Concurrency>}
@@ -42,19 +42,19 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
   }
 
   /**
-   * @description
+   * @description Active state for synchronous processing.
    * @type {Active}
    */
   #active = new Active(false);
 
   /**
-   * @description
+   * @description Privately stored maximum number of elements that can be processed concurrently.
    * @type {Concurrency}
    */
   #concurrency: Concurrency;
 
   /**
-   * @description
+   * @description Privately stored debug state.
    * @type {Debug}
    */
   #debug = new Debug(false);
@@ -66,7 +66,7 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
   #processed: Set<Type> = new Set();
 
   /**
-   * @description
+   * @description Privately stored `Processing` object that contains active tasks.
    * @type {Processing}
    */
   #processing;
@@ -75,6 +75,13 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
    * Creates an instance of `Tasks`.
    * @constructor
    * @param {Concurrency} concurrency 
+   */
+  
+  /**
+   * Creates an instance of `Tasks`.
+   * @constructor
+   * @param {boolean} enabled Enable initially `Tasks` functionality.
+   * @param {Concurrency} concurrency The maximum number of elements that can be processed concurrently.
    */
   constructor(enabled: boolean, concurrency: Concurrency) {
     super(enabled);
@@ -261,7 +268,7 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
   }
 
   /**
-   * @description
+   * @description Console debug the important steps of the `Tasks` functionality on debug state `true`.
    * @param {string} message 
    * @param {?*} [data] 
    * @returns {this} 
