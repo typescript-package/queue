@@ -20,7 +20,12 @@
   },
   "keywords": [
     "@typescript-package",
-    "@typescript-package/queue"
+    "@typescript-package/queue",
+    "Elements",
+    "Processing",
+    "Queue",
+    "Stack",
+    "TaskQueue"
   ],
   "funding": [
     {
