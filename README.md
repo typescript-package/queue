@@ -144,7 +144,7 @@ console.log(`isFull(), `, taskQueue.isFull()); // Output: false
 console.log(`size, `, taskQueue.size); // Output: 10
 
 // The actual queue Elements state - raw array state of the queue.
-console.log(`state, `, taskQueue.state); // Output: [1, 2, 3] // TODO:
+console.log(`state, `, taskQueue.state); // Output: [1, 2, 3]
 
 // The actual queue length.
 console.log(`length, `, taskQueue.length); // Output: 3
