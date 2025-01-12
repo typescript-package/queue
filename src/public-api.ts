@@ -5,8 +5,9 @@ export {
   // Class.
   Elements,
   Processing,
+  TaskQueue,
+  Tasks,
   // Abstract.
-  ProcessingQueue,
   Queue,
   Stack
 } from './lib';

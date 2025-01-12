@@ -1,6 +1,6 @@
 {
   "name": "@typescript-package/queue",
-  "version": "1.0.0-beta",
+  "version": "2.0.0-beta",
   "author": "wwwdev.io <dev@wwwdev.io>",
   "description": "A lightweight TypeScript library for managing various queue and stack structures.",
   "license": "MIT",
@@ -8,14 +8,8 @@
     "access": "public",
     "registry": "https://registry.npmjs.org"
   },
-  "devDependencies": {},
   "peerDependencies": {
     "@typescript-package/state": "^2.0.0"
-  },
-  "scripts": {
-    "prepublishOnly": "npm run pkg && npm run clean",
-    "pkg": "npm pkg delete dependencies",
-    "clean": "npm pkg delete scripts"
   },
   "repository": {
     "type": "git",
@@ -26,7 +20,12 @@
   },
   "keywords": [
     "@typescript-package",
-    "@typescript-package/queue"
+    "@typescript-package/queue",
+    "Elements",
+    "Processing",
+    "Queue",
+    "Stack",
+    "TaskQueue"
   ],
   "funding": [
     {
