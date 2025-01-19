@@ -2,15 +2,17 @@
 import { Ability as Processable, Boolean as Active, Boolean as Debug } from "@typescript-package/state";
 import { Processing } from "./processing.class";
 // Type.
-import { ErrorCallback, ProcessCallback } from "../type";
+import { ErrorCallback, FailureCallback, ProcessCallback, SuccessCallback } from '@typedly/callback';
+// Enum.
+import { Processed } from "../enum/processed.enum";
 /**
  * @description A class designed to manage and execute a collection of asynchronous tasks with concurrently control or synchronous tasks.
  * @export
  * @class Tasks
- * @template Type 
+ * @template Element 
  * @extends {Processable}
  */
-export class Tasks<Type = any, Concurrency extends number = number> extends Processable {
+export class Tasks<Element = any, Concurrency extends number = number> extends Processable {
   /**
    * @description The maximum number of elements that can be processed concurrently.
    * @public
@@ -25,9 +27,9 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
    * @description Returns the processed elements.
    * @public
    * @readonly
-   * @type {Set<Type>}
+   * @type {Set<Element>}
    */
-  public get processed(): Set<Type> {
+  public get processed(): Set<Element> {
     return this.#processed;
   }
 
@@ -35,10 +37,19 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
    * @description Returns the `Processing` object that contains active tasks.
    * @public
    * @readonly
-   * @type {Processing<Type, Concurrency>}
+   * @type {Processing<Element, Concurrency>}
    */
   public get processing(): Processing {
     return this.#processing;
+  }
+
+  /**
+   * @description Console debug the important steps of the `Tasks` functionality on debug state `true`.
+   * @readonly
+   * @type {Console | undefined}
+   */
+  get #console() {
+    return this.#debug.isTrue() ? console : undefined;
   }
 
   /**
@@ -61,9 +72,9 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
 
   /**
    * @description A set of processed elements.
-   * @type {Set<Type>}
+   * @type {Set<Element>}
    */
-  #processed: Set<Type> = new Set();
+  #processed: Set<Element> = new Set();
 
   /**
    * @description Privately stored `Processing` object that contains active tasks.
@@ -103,33 +114,38 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
    * @description Runs asynchronous single processing on the `element`.
    * @public
    * @async
-   * @param {Type} element The element to process.
-   * @param {ProcessCallback<Type>} callbackFn The callback function to process the element.
-   * @param {ErrorCallback<Type>} [onError] An optional error handler.
+   * @param {Element} element The element to process.
+   * @param {ProcessCallback<Element, void | Promise<void> | Processed>} callbackFn The callback function to process the element.
+   * @param {SuccessCallback<Element>} [onSuccess] An optional success handler.
+   * @param {FailureCallback<Element>} [onFailure] An optional failure handler.
+   * @param {ErrorCallback<Element>} [onError] An optional error handler.
    * @returns {Promise<void>}
    */
   public async asyncProcess(
-    element: Type,
-    callbackFn: ProcessCallback<Type>,
-    onError?: ErrorCallback<Type>,
-    onProcessed?: ProcessCallback<Type>
+    element: Element,
+    callbackFn: ProcessCallback<Element, void | Promise<void> | Processed>,
+    onSuccess?: SuccessCallback<Element>,
+    onFailure?: FailureCallback<Element>,
+    onError?: ErrorCallback<Element>,
   ): Promise<void> {
     if (this.isDisabled()) {
       throw new Error(`Enable the functionality to use the \`asyncProcess()\` method.`);
     }
-    this.#consoleDebug("asyncProcess started", { element });
+    this.#console?.debug("asyncProcess started", { element });
     // Create a promise.
     const task = (async () => {
+      let processed: void | Promise<void> | Processed = Processed.Success;
+
       try {
-        this.#consoleDebug("Processing element:", element);
-        await callbackFn(element);
+        this.#console?.debug("Processing element:", element);
+        processed = await callbackFn(element);
       } catch (error) {
-        this.#consoleDebug("Error occurred during processing:", { element, error });
-        onError?.(element, error);
+        this.#console?.debug("Error occurred during processing:", { element, error });
+        onError?.(element);
       } finally {
-        onProcessed?.(element); // What to do with the processed
+        (processed === Processed.Failure) ? onFailure?.(element) : onSuccess?.(element);
         this.#processed.add(element);
-        this.#consoleDebug("Element processed:", { element, processed: this.#processed.size });
+        this.#console?.debug("Element processed:", { element, processed: this.#processed.size });
       }
     })();
     // Add the task to the processing state.
@@ -140,46 +156,49 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
    * @description Starts asynchronous processing elements with concurrency control.
    * @public
    * @async
-   * @param {Iterable<Type>} elements The elements to process.
-   * @param {ProcessCallback<Type>} callbackFn The function to process each element.
-   * @param {?ErrorCallback<Type>} [onError] An optional error handler.
+   * @param {Iterable<Element>} elements The elements to process.
+   * @param {ProcessCallback<Element, void | Promise<void> | Processed>} processFn The function to process each element.
+   * @param {?SuccessCallback<Element>} [onSuccess] An optional on success handler.
+   * @param {?FailureCallback<Element>} [onFailure] An optional on failure handler.
+   * @param {?ErrorCallback<Element>} [onError] An optional on error handler.
    * @param {('default' | 'race')} [method='default'] 
    * @returns {Promise<void>} 
    */
   public async asyncRun(
-    elements: Iterable<Type>,
-    callbackFn: ProcessCallback<Type>,
-    onError?: ErrorCallback<Type>,
-    onProcessed?: ProcessCallback<Type>,
+    elements: Iterable<Element>,
+    processFn: ProcessCallback<Element, void | Promise<void> | Processed>,
+    onSuccess?: SuccessCallback<Element>,
+    onFailure?: FailureCallback<Element>,
+    onError?: ErrorCallback<Element>,
     method: 'all' | 'default' | 'race' = 'default'
-  ): Promise<Set<Type>> {
+  ): Promise<Set<Element>> {
     if (this.isDisabled()) {
       throw new Error(`Enable the functionality to use the \`asyncRun()\` method.`);
     }
-    this.#consoleDebug("asyncRun started", { method, concurrency: this.#concurrency });
+    this.#console?.debug("asyncRun started", { method, concurrency: this.#concurrency });
     switch(method) {
       case 'race':
-        this.#consoleDebug("Using 'race' method");
+        this.#console?.debug("Using 'race' method");
         for (const element of elements) {
-          this.#consoleDebug("Processing element with 'race'", { element, activeCount: this.#processing.activeCount });
+          this.#console?.debug("Processing element with 'race'", { element, activeCount: this.#processing.activeCount });
           this.#processing.activeCount >= this.#concurrency && await Promise.race(this.#processing.state);
-          this.asyncProcess(element, callbackFn, onError, onProcessed);
+          this.asyncProcess(element, processFn, onSuccess, onFailure, onError);
         }
         break
       case 'all':
       default:
-        this.#consoleDebug("Using the 'default' / 'all' method");
+        this.#console?.debug("Using the 'default' / 'all' method");
         const iterator = elements[Symbol.iterator]();
         // Create the async process for the task.
         const process = async (): Promise<void> => {
           while (this.#processing.activeCount < this.#concurrency) {
             const { value: element, done } = iterator.next();
             if (done) break;
-            this.#consoleDebug("Processing element with default", { element, concurrency: this.#concurrency, activeCount: this.#processing.activeCount });
+            this.#console?.debug("Processing element with default", { element, concurrency: this.#concurrency, activeCount: this.#processing.activeCount });
             const task = this
-              .asyncProcess(element, callbackFn, onError, onProcessed)
+              .asyncProcess(element, processFn, onSuccess, onFailure, onError)
               .finally(() => (this.#processing.delete(task), process()));
-            this.#consoleDebug("Add the processed task to the processing.", {element, task});
+            this.#console?.debug("Add the processed task to the processing.", {element, task});
             this.#processing.add(task, false);
           }
           // Wait for the tasks to finish.
@@ -188,7 +207,7 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
         await process();
         break;
     }
-    this.#consoleDebug("asyncRun completed");
+    this.#console?.debug("asyncRun completed");
     await this.#processing.complete();
     return this.#processed;
   }
@@ -196,37 +215,42 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
   /**
    * @description Runs a synchronous processing on the provided `element` using the `callbackFn`.
    * If an `onError` callback is provided, it will handle any errors encountered during processing.
-   * @param {(Type | undefined)} element The element to be processed.
-   * @param {ProcessCallback<Type>} callbackFn A function that processes the element synchronously.
-   * @param {?ErrorCallback<Type>} [onError] An optional callback function to handle errors during processing.
+   * @public
+   * @param {(Element | undefined)} element The element to be processed.
+   * @param {ProcessCallback<Element, void | Promise<void> | Processed>} callbackFn A function that processes the element synchronously.
+   * @param {?SuccessCallback<Element>} [onSuccess] An optional callback function to handle success element being processed.
+   * @param {?FailureCallback<Element>} [onFailure] An optional callback function to handle failure element being processed.
+   * @param {?ErrorCallback<Element>} [onError] An optional callback function to handle errors during processing.
    * @returns {this} The current instance for method chaining.
    */
   public process(
-    element: Type | undefined,
-    callbackFn: ProcessCallback<Type>,
-    onError?: ErrorCallback<Type>,
-    onProcessed?: ProcessCallback<Type>
+    element: Element | undefined,
+    callbackFn: ProcessCallback<Element, void | Promise<void> | void | Promise<void> | Processed>,
+    onSuccess?: SuccessCallback<Element>,
+    onFailure?: FailureCallback<Element>,
+    onError?: ErrorCallback<Element>,
   ): this {
     if (this.isDisabled()) {
       throw new Error(`Enable the functionality to use the \`process()\` method.`);
     }
-    this.#consoleDebug("process started", { element });
+    this.#console?.debug("process started", { element });
     this.#active.isFalse() && this.#active.true();
-    this.#consoleDebug("Processing state activated", { active: this.#active.state });
+    this.#console?.debug("Processing state activated", { active: this.#active.state });
     if (element) {
+      let processed: void | Promise<void> | Processed = Processed.Success;
       try {
-        this.#consoleDebug("Processing element", { element });
-        callbackFn(element);
+        this.#console?.debug("Processing element", { element });
+        processed = callbackFn(element);
       } catch(error) {
-        this.#consoleDebug("Error during processing", { error, element });
-        onError?.(element, error);
+        this.#console?.debug("Error during processing", { error, element });
+        onError?.(element);
       } finally {
-        onProcessed?.(element);
+        (processed === Processed.Failure) ? onFailure?.(element) : onSuccess?.(element);
         // Add to the processed.
         this.#processed.add(element);
-        this.#consoleDebug("Element processed", { element, processedCount: this.#processed.size });
+        this.#console?.debug("Element processed", { element, processedCount: this.#processed.size });
         this.#active.false();
-        this.#consoleDebug("Processing state deactivated", { active: this.#active.state });
+        this.#console?.debug("Processing state deactivated", { active: this.#active.state });
       }  
     }
     return this;
@@ -236,25 +260,28 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
    * @description Runs the provided `callbackFn` synchronously on each element in the `elements` iterable.
    * If an `onError` callback is provided, it will handle errors encountered during processing.
    * @public
-   * @param {Iterable<Type>} elements An iterable collection of elements to be processed.
-   * @param {ProcessCallback<Type>} callbackFn A function that will process each element synchronously.
-   * @param {?ErrorCallback<Type>} [onError] Optional callback for handling errors that occur during processing.
+   * @param {Iterable<Element>} elements An iterable collection of elements to be processed.
+   * @param {ProcessCallback<Element, void | Promise<void> | Processed>} processFn A function that will process each element synchronously.
+   * @param {?SuccessCallback<Element>} [onSuccess] Optional callback for success processed element.
+   * @param {?FailureCallback<Element>} [onFailure] Optional callback for failure of processed element.
+   * @param {?ErrorCallback<Element>} [onError] Optional callback for handling errors that occur during processing.
    */
   public run(
-    elements: Iterable<Type>,
-    callbackFn: ProcessCallback<Type>,
-    onError?: ErrorCallback<Type>,
-    onProcessed?: ProcessCallback<Type>
+    elements: Iterable<Element>,
+    processFn: ProcessCallback<Element, void | Promise<void> | Processed>,
+    onSuccess?: SuccessCallback<Element>,
+    onFailure?: FailureCallback<Element>,
+    onError?: ErrorCallback<Element>,
   ) {
     if (this.isDisabled()) {
       throw new Error(`Enable the functionality to use the \`run()\` method.`);
     }
-    this.#consoleDebug("run started", { elements });
+    this.#console?.debug("run started", { elements });
     for (const element of elements) {
-      this.#consoleDebug("Processing element synchronously", { element });
-      this.process(element, callbackFn, onError, onProcessed);
+      this.#console?.debug("Processing element synchronously", { element });
+      this.process(element, processFn, onSuccess, onFailure, onError);
     }
-    this.#consoleDebug("run completed");
+    this.#console?.debug("run completed");
   }
 
   /**
@@ -264,17 +291,6 @@ export class Tasks<Type = any, Concurrency extends number = number> extends Proc
   public unDebug(): this {
     this.#debug.false();
     this.#processing.unDebug();
-    return this;
-  }
-
-  /**
-   * @description Console debug the important steps of the `Tasks` functionality on debug state `true`.
-   * @param {string} message 
-   * @param {?*} [data] 
-   * @returns {this} 
-   */
-  #consoleDebug(message: string, data?: any): this {
-    this.#debug.isTrue() && console.debug(message, data || '');
     return this;
   }
 }
