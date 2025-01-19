@@ -4,21 +4,23 @@ import { Queue } from "./queue.abstract";
 import { Processing } from "./processing.class";
 import { Tasks } from "./tasks.class";
 // Type.
-import { ErrorCallback, ProcessCallback } from "../type";
+import { ErrorCallback, FailureCallback, ProcessCallback, SuccessCallback } from "@typedly/callback";
+// Enum.
+import { Processed } from "../enum/processed.enum";
 /**
  * @description A task queue that processes elements concurrently with a specified concurrency limit.
  * @export
  * @class TaskQueue
- * @template Type 
+ * @template Element 
  * @template {number} [Concurrency=number] 
  * @template {number} [Size=number] 
- * @extends {Queue<Type, Size>}
+ * @extends {Queue<Element, Size>}
  */
 export class TaskQueue<
-  Type,
+  Element,
   Concurrency extends number = number,
   Size extends number = number
-> extends Queue<Type, Size> {
+> extends Queue<Element, Size> {
   /**
    * @description The maximum number of elements that can be processed concurrently.
    * @public
@@ -33,9 +35,9 @@ export class TaskQueue<
    * @description Returns the processed elements.
    * @public
    * @readonly
-   * @type {Set<Type>}
+   * @type {Set<Element>}
    */
-  public get processed(): Set<Type> {
+  public get processed(): Set<Element> {
     return this.#tasks.processed;
   }
 
@@ -43,7 +45,7 @@ export class TaskQueue<
    * @description Returns the `Processing` object that contains active tasks.
    * @public
    * @readonly
-   * @type {Processing<Type, Concurrency>}
+   * @type {Processing<Element, Concurrency>}
    */
   public get processing(): Processing {
     return this.#tasks.processing;
@@ -51,7 +53,7 @@ export class TaskQueue<
 
   /**
    * @description The `Tasks` object to handle the processing.
-   * @type {Tasks<Type, Concurrency>}
+   * @type {Tasks<Element, Concurrency>}
    */
   #tasks;
   
@@ -60,15 +62,15 @@ export class TaskQueue<
    * @constructor
    * @param {Concurrency} [concurrency=1 as Concurrency] 
    * @param {Size} [size=Infinity as Size] 
-   * @param {...Type[]} elements 
+   * @param {...Element[]} elements 
    */
   constructor(
     concurrency: Concurrency = 1 as Concurrency,
     size: Size = Infinity as Size,
-    ...elements: Type[]
+    ...elements: Element[]
   ) {
     super(size, ...elements);
-    this.#tasks = new Tasks<Type, Concurrency>(true, concurrency);
+    this.#tasks = new Tasks<Element, Concurrency>(true, concurrency);
   }
 
   /**
@@ -85,10 +87,10 @@ export class TaskQueue<
    * @description Waits for all elements in the queue to be processed and returns the set of processed elements.
    * @public
    * @async
-   * @returns {Promise<Set<Type>>}
+   * @returns {Promise<Set<Element>>}
    */
-  public async onCompleted(): Promise<Set<Type>> {
-    return new Promise<Set<Type>>((resolve, reject) => {
+  public async onCompleted(): Promise<Set<Element>> {
+    return new Promise<Set<Element>>((resolve, reject) => {
       const interval = setInterval(() => 
         this.#tasks.processing.isActive()
         ? super.length === 0 && resolve([] as any) // TODO: this.#tasks.processed
@@ -101,20 +103,24 @@ export class TaskQueue<
    * @description Starts asynchronous processing queue elements with concurrency control.
    * @public
    * @async
-   * @param {ProcessCallback<Type>} callbackFn The function to process each element.
-   * @param {?ErrorCallback<Type>} [onError] An optional error handler.
-   * @returns {Promise<Set<Type>>} 
+   * @param {ProcessCallback<Element, void | Promise<void> | Processed>} callbackFn The function to process each element.
+   * @param {?SuccessCallback<Element>} [onSuccess] An optional success handler.
+   * @param {?FailureCallback<Element>} [onFailure] An optional failure handler.
+   * @param {?ErrorCallback<Element>} [onError] An optional error handler.
+   * @returns {Promise<Set<Element>>} 
    */
   public async asyncRun(
-    callbackFn: ProcessCallback<Type>,
-    onError?: ErrorCallback<Type>,
-  ): Promise<Set<Type>> {
+    callbackFn: ProcessCallback<Element, void | Promise<void> | Processed>,
+    onSuccess?: SuccessCallback<Element>,
+    onFailure?: FailureCallback<Element>,
+    onError?: ErrorCallback<Element>,
+  ): Promise<Set<Element>> {
     const process = async () => {
       while (this.#tasks.processing.activeCount < this.#tasks.concurrency && super.length > 0) {
         const element = this.dequeue();
         if (element) {
           const task = this.#tasks
-            .asyncProcess(element, callbackFn, onError)
+            .asyncProcess(element, callbackFn, onSuccess, onFailure, onError)
             .finally(() => (this.#tasks.processing.delete(task), process()));
           this.#tasks.processing.add(task, false);
         }
@@ -130,13 +136,20 @@ export class TaskQueue<
   /**
    * @description Starts processing elements in the queue using the provided callback function.
    * @public
-   * @param {(element: Type) => void} callbackFn A function to process each element in the queue.
-   * @param {?(element: Type, error: unknown) => void} [onError] An optional function to handle the error.
+   * @param {ProcessCallback<Element, void | Promise<void> | Processed>} callbackFn A function to process each element in the queue.
+   * @param {?SuccessCallback<Element>} [onSuccess] An optional function to handle the success.
+   * @param {?FailureCallback<Element>} [onFailure] An optional function to handle the failure.
+   * @param {?ErrorCallback<Element>} [onError] An optional function to handle the error.
    * @returns {void) => void}
    */
-  public run(callbackFn: (element: Type) => void, onError?: (element: Type, error: unknown) => void) {
+  public run(
+    callbackFn: ProcessCallback<Element, void | Promise<void> | Processed>,
+    onSuccess?: SuccessCallback<Element>,
+    onFailure?: FailureCallback<Element>,
+    onError?: ErrorCallback<Element>,
+  ): void {
     while (super.length > 0) {
-      this.#tasks.process(this.dequeue(), callbackFn, onError);
+      this.#tasks.process(this.dequeue(), callbackFn, onSuccess, onFailure, onError);
     }
   }
 }
