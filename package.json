@@ -9,6 +9,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "peerDependencies": {
+    "@typedly/callback": "^1.0.0-beta.2",
     "@typescript-package/state": "^2.0.0"
   },
   "repository": {
